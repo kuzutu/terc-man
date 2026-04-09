@@ -367,7 +367,6 @@ async function doTranslate(text) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        api_key: apiKey,
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
         system: 'Sen profesyonel bir çevirmensın. Verilen metni belirtilen dile çevir. Sadece çeviriyi yaz, açıklama ekleme.',

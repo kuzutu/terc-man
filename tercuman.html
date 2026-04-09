@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simultane Tercüman</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f4f4f0; color: #1a1a1a;
+  min-height: 100vh; padding: 2rem 1rem;
+}
+.container { max-width: 700px; margin: 0 auto; }
+h1 { font-size: 22px; font-weight: 600; margin-bottom: 1.5rem; }
+
+.card {
+  background: #fff; border: 1px solid #e0e0da;
+  border-radius: 12px; padding: 1.25rem; margin-bottom: .75rem;
+}
+.lbl { font-size: 11px; letter-spacing: .06em; color: #888; margin-bottom: 8px; font-weight: 500; }
+
+.row { display: flex; gap: 8px; align-items: center; }
+input[type=password], input[type=text] {
+  flex: 1; padding: 8px 12px; border: 1px solid #ddd;
+  border-radius: 8px; font-size: 13px; background: #fafafa; color: #333;
+}
+input[type=password]:focus, input[type=text]:focus {
+  outline: 2px solid #1D9E75; border-color: transparent;
+}
+.hint { font-size: 11px; color: #999; margin-top: 6px; line-height: 1.5; }
+.hint a { color: #1D9E75; }
+
+select {
+  flex: 1; padding: 8px 10px; border: 1px solid #ddd;
+  border-radius: 8px; font-size: 14px; background: #fff; color: #222;
+}
+select:focus { outline: 2px solid #1D9E75; border-color: transparent; }
+.swap-btn {
+  background: none; border: 1px solid #ddd; border-radius: 8px;
+  padding: 6px 12px; font-size: 15px; cursor: pointer; color: #666;
+}
+.swap-btn:hover { background: #f0f0ec; }
+
+textarea {
+  width: 100%; min-height: 100px; resize: vertical;
+  padding: 10px 12px; border: 1px solid #e0e0da; border-radius: 8px;
+  font-size: 15px; font-family: inherit; background: #fafaf8;
+  color: #1a1a1a; line-height: 1.6;
+}
+textarea:focus { outline: 2px solid #1D9E75; border-color: transparent; }
+
+.btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+.btn-green {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 18px; background: #1D9E75; color: #fff;
+  border: none; border-radius: 8px; font-size: 14px;
+  font-weight: 500; cursor: pointer; white-space: nowrap;
+}
+.btn-green:hover { background: #0F6E56; }
+.btn-green:disabled { background: #ccc; cursor: default; }
+.btn-outline {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; background: #fff; border: 1px solid #ddd;
+  border-radius: 8px; font-size: 14px; color: #555; cursor: pointer; white-space: nowrap;
+}
+.btn-outline:hover { background: #f5f5f2; }
+.btn-outline:disabled { opacity: .4; cursor: default; }
+.btn-mic.on {
+  background: #E24B4A; border-color: #E24B4A; color: #fff;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(226,75,74,.35)} 50%{box-shadow:0 0 0 7px rgba(226,75,74,0)} }
+.mic-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink:0; }
+.shortcut-hint { font-size: 11px; color: #bbb; margin-left: auto; }
+
+.toggle-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.tog { position: relative; width: 36px; height: 20px; flex-shrink:0; }
+.tog input { opacity:0; width:0; height:0; }
+.tog-sl { position:absolute; inset:0; background:#ccc; border-radius:20px; cursor:pointer; transition:background .2s; }
+.tog-sl::before { content:''; position:absolute; width:14px; height:14px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:transform .2s; }
+input:checked+.tog-sl { background:#1D9E75; }
+input:checked+.tog-sl::before { transform:translateX(16px); }
+
+/* Ses seçici */
+.voice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+.voice-card {
+  border: 1px solid #e0e0da; border-radius: 8px; padding: 8px 10px;
+  cursor: pointer; text-align: center; transition: all .15s; background: #fff;
+}
+.voice-card:hover { border-color: #1D9E75; background: #f0f9f5; }
+.voice-card.active { border-color: #1D9E75; background: #e8f5e9; }
+.voice-card .vname { font-size: 13px; font-weight: 500; color: #222; }
+.voice-card .vdesc { font-size: 10px; color: #999; margin-top: 2px; }
+.voice-card .vplay { font-size: 10px; color: #1D9E75; margin-top: 4px; }
+.speed-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.speed-row label { font-size: 12px; color: #888; white-space: nowrap; }
+.speed-row input[type=range] { flex: 1; }
+.speed-val { font-size: 12px; font-weight: 500; color: #333; min-width: 28px; }
+
+.notice { font-size: 12px; padding: 8px 12px; border-radius: 8px; margin-top: 8px; display:none; line-height:1.5; }
+.notice.warn { background:#fff8e1; color:#8a6d00; border:1px solid #ffe082; }
+.notice.err  { background:#fdecea; color:#b71c1c; border:1px solid #ffcdd2; }
+.notice.ok   { background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; }
+
+.divrow { display:flex; align-items:center; gap:8px; margin:.5rem 0; }
+.divline { flex:1; height:1px; background:#e8e8e4; }
+.divtag { font-size:11px; color:#aaa; letter-spacing:.05em; }
+
+.out-box {
+  min-height: 100px; background: #fafaf8; border: 1px solid #e0e0da;
+  border-radius: 8px; padding: 10px 12px; font-size: 15px;
+  line-height: 1.6; color: #1a1a1a;
+}
+.out-box.ph { color: #bbb; }
+
+.spin { display:inline-block; width:14px; height:14px; border:2px solid #ddd; border-top-color:#555; border-radius:50%; animation:spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.hist { margin-top:.5rem; }
+.hi { padding:8px 12px; border-left:2px solid #e0e0da; margin-bottom:6px; background:#fff; border-radius:0 8px 8px 0; }
+.hi-s { font-size:11px; color:#999; margin-bottom:2px; }
+.hi-t { font-size:14px; color:#222; }
+
+.badge {
+  display:inline-block; font-size:10px; padding:2px 7px;
+  border-radius:20px; background:#e8f5e9; color:#1b5e20;
+  border:1px solid #a5d6a7; margin-left:6px; vertical-align:middle;
+}
+.badge.robot { background:#f5f5f2; color:#888; border-color:#ddd; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🌐 Simultane Tercüman</h1>
+
+  <!-- Anthropic API -->
+  <div class="card">
+    <div class="lbl">ANTHROPIC API ANAHTARI <span class="badge">Çeviri</span></div>
+    <div class="row">
+      <input type="password" id="apiKey" placeholder="sk-ant-api03-...">
+      <button class="btn-outline" id="saveAnthropicBtn">Kaydet</button>
+    </div>
+    <p class="hint"><a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a> → API Keys</p>
+    <div id="noticeAnthropic" class="notice"></div>
+  </div>
+
+  <!-- OpenAI TTS API -->
+  <div class="card">
+    <div class="lbl">OPENAI API ANAHTARI <span class="badge">İnsan Sesi</span></div>
+    <div class="row">
+      <input type="password" id="openaiKey" placeholder="sk-proj-...">
+      <button class="btn-outline" id="saveOpenAIBtn">Kaydet</button>
+    </div>
+    <p class="hint">
+      <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a> → API Keys &nbsp;·&nbsp;
+      Yoksa robotik ses kullanılır, yine de çalışır.
+    </p>
+    <div id="noticeOpenAI" class="notice"></div>
+
+    <!-- Ses Seçici -->
+    <div style="margin-top:12px;">
+      <div class="lbl">SES KARAKTERİ</div>
+      <div class="voice-grid" id="voiceGrid"></div>
+    </div>
+
+    <!-- Hız -->
+    <div class="speed-row">
+      <label>Konuşma hızı</label>
+      <input type="range" id="speedSlider" min="70" max="130" step="5" value="95">
+      <span class="speed-val" id="speedVal">0.95×</span>
+    </div>
+  </div>
+
+  <!-- Dil -->
+  <div class="card">
+    <div class="lbl">DİL ÇİFTİ</div>
+    <div class="row">
+      <select id="src">
+        <option value="tr">🇹🇷 Türkçe</option>
+        <option value="en">🇬🇧 English</option>
+        <option value="bg">🇧🇬 Български</option>
+      </select>
+      <button class="swap-btn" id="swapBtn">⇄</button>
+      <select id="tgt">
+        <option value="en">🇬🇧 English</option>
+        <option value="tr">🇹🇷 Türkçe</option>
+        <option value="bg">🇧🇬 Български</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Giriş -->
+  <div class="card">
+    <div class="lbl">METİN GİRİŞİ</div>
+    <textarea id="srcText" placeholder="Çevirmek istediğiniz metni buraya yazın..."></textarea>
+    <div class="btn-row">
+      <button class="btn-green" id="translateBtn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Çevir
+      </button>
+      <button class="btn-outline btn-mic" id="micBtn">
+        <div class="mic-dot"></div>
+        <span id="micLabel">Mikrofon</span>
+      </button>
+      <span class="shortcut-hint">Ctrl+Enter</span>
+    </div>
+    <div id="micNotice" class="notice"></div>
+    <div class="toggle-row">
+      <label class="tog"><input type="checkbox" id="autoSpeak" checked><span class="tog-sl"></span></label>
+      <span style="font-size:13px;color:#666">Çeviriyi otomatik seslendir</span>
+    </div>
+  </div>
+
+  <div class="divrow">
+    <div class="divline"></div>
+    <span class="divtag" id="divTag">ÇEVİRİ</span>
+    <div class="divline"></div>
+  </div>
+
+  <!-- Çıkış -->
+  <div class="card">
+    <div class="lbl">ÇEVİRİ</div>
+    <div class="out-box ph" id="outBox">Çeviri burada görünecek...</div>
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;">
+      <button class="btn-outline" id="speakBtn" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <polygon points="5,3 19,12 5,21" fill="currentColor"/>
+        </svg>
+        Seslendir
+      </button>
+      <span id="ttsMode" style="font-size:11px;color:#aaa;"></span>
+    </div>
+  </div>
+
+  <div class="hist" id="hist"></div>
+</div>
+
+<script>
+const NAMES = { tr:'Türkçe', en:'İngilizce', bg:'Bulgarca' };
+const TTS_LANG = { tr:'tr-TR', en:'en-US', bg:'bg-BG' };
+const STT_LANG = { tr:'tr-TR', en:'en-US', bg:'bg-BG' };
+
+const VOICES = [
+  { id:'nova',    name:'Nova',    desc:'Genç, sıcak kadın', emoji:'👩' },
+  { id:'shimmer', name:'Shimmer', desc:'Yumuşak, sakin kadın', emoji:'🌸' },
+  { id:'alloy',   name:'Alloy',   desc:'Nötr, profesyonel', emoji:'🎙️' },
+  { id:'echo',    name:'Echo',    desc:'Olgun erkek', emoji:'👨' },
+  { id:'fable',   name:'Fable',   desc:'Anlatıcı, sıcak erkek', emoji:'📖' },
+  { id:'onyx',    name:'Onyx',    desc:'Derin, güçlü erkek', emoji:'🎤' },
+];
+
+let selectedVoice = 'nova';
+let curTranslation = '';
+let recognition = null;
+let isListening = false;
+let translateTimer = null;
+let finalTx = '';
+
+const $ = id => document.getElementById(id);
+const apiKeyEl    = $('apiKey');
+const openaiKeyEl = $('openaiKey');
+const srcSel      = $('src');
+const tgtSel      = $('tgt');
+const srcText     = $('srcText');
+const outBox      = $('outBox');
+const translateBtn= $('translateBtn');
+const micBtn      = $('micBtn');
+const micLabel    = $('micLabel');
+const micNotice   = $('micNotice');
+const speakBtn    = $('speakBtn');
+const autoSpeak   = $('autoSpeak');
+const divTag      = $('divTag');
+const histEl      = $('hist');
+const ttsMode     = $('ttsMode');
+const speedSlider = $('speedSlider');
+const speedVal    = $('speedVal');
+
+// Kayıtlı anahtarları yükle
+const savedAnthropic = localStorage.getItem('anthropic_key') || '';
+const savedOpenAI    = localStorage.getItem('openai_key') || '';
+const savedVoice     = localStorage.getItem('tts_voice') || 'nova';
+const savedSpeed     = localStorage.getItem('tts_speed') || '95';
+if (savedAnthropic) apiKeyEl.value = savedAnthropic;
+if (savedOpenAI)    openaiKeyEl.value = savedOpenAI;
+selectedVoice = savedVoice;
+speedSlider.value = savedSpeed;
+speedVal.textContent = (parseInt(savedSpeed) / 100).toFixed(2) + '×';
+
+function notice(elId, msg, type) {
+  const el = $(elId);
+  el.textContent = msg; el.className = 'notice ' + type; el.style.display = 'block';
+  if (type === 'ok') setTimeout(() => el.style.display = 'none', 2500);
+}
+function hideNotice(elId) { $(elId).style.display = 'none'; }
+
+$('saveAnthropicBtn').addEventListener('click', () => {
+  const k = apiKeyEl.value.trim();
+  if (!k) return;
+  localStorage.setItem('anthropic_key', k);
+  notice('noticeAnthropic', 'Kaydedildi.', 'ok');
+});
+
+$('saveOpenAIBtn').addEventListener('click', () => {
+  const k = openaiKeyEl.value.trim();
+  if (!k) return;
+  localStorage.setItem('openai_key', k);
+  notice('noticeOpenAI', 'Kaydedildi.', 'ok');
+});
+
+// Ses kartları
+const voiceGrid = $('voiceGrid');
+VOICES.forEach(v => {
+  const card = document.createElement('div');
+  card.className = 'voice-card' + (v.id === selectedVoice ? ' active' : '');
+  card.innerHTML = `<div class="vname">${v.emoji} ${v.name}</div><div class="vdesc">${v.desc}</div><div class="vplay">▶ Dene</div>`;
+  card.addEventListener('click', () => {
+    selectedVoice = v.id;
+    localStorage.setItem('tts_voice', v.id);
+    document.querySelectorAll('.voice-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    previewVoice(v.id);
+  });
+  voiceGrid.appendChild(card);
+});
+
+speedSlider.addEventListener('input', () => {
+  const val = (parseInt(speedSlider.value) / 100).toFixed(2);
+  speedVal.textContent = val + '×';
+  localStorage.setItem('tts_speed', speedSlider.value);
+});
+
+async function previewVoice(voiceId) {
+  const previews = { tr:'Merhaba, ben sizin tercümanınızım.', en:'Hello, I am your translator.', bg:'Здравейте, аз съм вашият преводач.' };
+  await speakText(previews[tgtSel.value] || previews.en, voiceId);
+}
+
+// Dil
+function updateTag() {
+  divTag.textContent = NAMES[srcSel.value].toUpperCase() + ' → ' + NAMES[tgtSel.value].toUpperCase();
+}
+updateTag();
+srcSel.addEventListener('change', updateTag);
+tgtSel.addEventListener('change', updateTag);
+$('swapBtn').addEventListener('click', () => {
+  const t = srcSel.value; srcSel.value = tgtSel.value; tgtSel.value = t;
+  updateTag();
+  if (isListening) stopMic();
+});
+
+// Çeviri
+async function doTranslate(text) {
+  const apiKey = apiKeyEl.value.trim();
+  if (!apiKey) { notice('micNotice', 'Lütfen Anthropic API anahtarını girin.', 'warn'); apiKeyEl.focus(); return; }
+  if (!text.trim()) return;
+
+  outBox.innerHTML = '<span class="spin"></span>';
+  outBox.className = 'out-box';
+  speakBtn.disabled = true;
+  translateBtn.disabled = true;
+  hideNotice('micNotice');
+
+  try {
+    const res = await fetch('/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: 'Sen profesyonel bir çevirmensın. Verilen metni belirtilen dile çevir. Sadece çeviriyi yaz, açıklama ekleme.',
+        messages: [{ role: 'user', content: `${NAMES[srcSel.value]} dilinden ${NAMES[tgtSel.value]} diline çevir:\n\n${text}` }]
+      })
+    });
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+    const data = await res.json();
+    const tr = data.content?.[0]?.text?.trim() || '';
+    if (!tr) throw new Error('Boş yanıt');
+
+    curTranslation = tr;
+    outBox.textContent = tr;
+    outBox.className = 'out-box';
+    speakBtn.disabled = false;
+    addHist(text, tr);
+    if (autoSpeak.checked) speakText(tr);
+
+  } catch(e) {
+    outBox.className = 'out-box ph';
+    outBox.textContent = 'Çeviri burada görünecek...';
+    notice('micNotice', 'Hata: ' + (e.message || 'Bağlantı sorunu'), 'err');
+  } finally {
+    translateBtn.disabled = false;
+  }
+}
+
+translateBtn.addEventListener('click', () => doTranslate(srcText.value.trim()));
+srcText.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); doTranslate(srcText.value.trim()); }
+});
+
+// TTS — OpenAI önce, yoksa tarayıcı
+async function speakText(text, voiceOverride) {
+  if (!text) return;
+  const openaiKey = openaiKeyEl.value.trim();
+  const voice = voiceOverride || selectedVoice;
+  const speed = parseInt(speedSlider.value) / 100;
+
+  if (openaiKey) {
+    try {
+      ttsMode.textContent = '⏳ Ses üretiliyor...';
+      const res = await fetch('/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ openai_key: openaiKey, text, voice, speed })
+      });
+      if (!res.ok) throw new Error('TTS hatası');
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      ttsMode.textContent = `🎙️ OpenAI · ${VOICES.find(v=>v.id===voice)?.name || voice}`;
+      audio.onended = () => URL.revokeObjectURL(url);
+      audio.play();
+      return;
+    } catch(e) {
+      ttsMode.textContent = '⚠️ OpenAI TTS hatası, robotik ses kullanılıyor';
+    }
+  }
+
+  // Tarayıcı TTS (yedek)
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = TTS_LANG[tgtSel.value] || 'en-US';
+  u.rate = speed;
+  const vs = window.speechSynthesis.getVoices();
+  const code = TTS_LANG[tgtSel.value] || 'en-US';
+  const v = vs.find(x => x.lang === code) || vs.find(x => x.lang.startsWith(code.slice(0,2)));
+  if (v) u.voice = v;
+  ttsMode.textContent = '🤖 Tarayıcı sesi (OpenAI anahtarı girilirse insan sesi aktif olur)';
+  window.speechSynthesis.speak(u);
+}
+
+speakBtn.addEventListener('click', () => speakText(curTranslation));
+
+// Mikrofon
+function startMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { notice('micNotice', 'Ses tanıma desteklenmiyor. Chrome veya Edge kullanın.', 'err'); return; }
+  hideNotice('micNotice');
+  recognition = new SR();
+  recognition.lang = STT_LANG[srcSel.value] || 'tr-TR';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    isListening = true;
+    micBtn.className = 'btn-outline btn-mic on';
+    micLabel.textContent = 'Durdurun';
+    notice('micNotice', 'Sizi dinliyorum… Konuşun.', 'ok');
+    finalTx = '';
+  };
+
+  recognition.onresult = e => {
+    let interim = ''; finalTx = '';
+    for (let i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalTx += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    srcText.value = (finalTx + interim).trim();
+    clearTimeout(translateTimer);
+    if (finalTx.trim()) translateTimer = setTimeout(() => doTranslate(finalTx.trim()), 1500);
+  };
+
+  recognition.onerror = e => {
+    const msgs = {
+      'not-allowed'  : 'Mikrofon izni reddedildi. Adres çubuğundaki kilit simgesine tıklayarak izin verin.',
+      'no-speech'    : 'Ses algılanamadı. Daha açık konuşun.',
+      'network'      : 'Ağ hatası.',
+      'audio-capture': 'Mikrofon bulunamadı.',
+    };
+    notice('micNotice', msgs[e.error] || 'Mikrofon hatası: ' + e.error, 'err');
+    stopMic();
+  };
+
+  recognition.onend = () => { if (isListening) try { recognition.start(); } catch(_) {} };
+  try { recognition.start(); } catch(ex) { notice('micNotice', 'Mikrofon başlatılamadı: ' + ex.message, 'err'); }
+}
+
+function stopMic() {
+  isListening = false;
+  micBtn.className = 'btn-outline btn-mic';
+  micLabel.textContent = 'Mikrofon';
+  if (recognition) { recognition.onend = null; try { recognition.stop(); } catch(_) {} recognition = null; }
+  if (finalTx.trim()) doTranslate(finalTx.trim());
+  hideNotice('micNotice');
+}
+
+micBtn.addEventListener('click', () => { if (isListening) stopMic(); else startMic(); });
+
+function addHist(s, t) {
+  const d = document.createElement('div');
+  d.className = 'hi';
+  d.innerHTML = `<div class="hi-s">${NAMES[srcSel.value]}: ${s.length>80?s.slice(0,80)+'…':s}</div>
+                 <div class="hi-t">${t.length>100?t.slice(0,100)+'…':t}</div>`;
+  histEl.insertBefore(d, histEl.firstChild);
+  if (histEl.children.length > 5) histEl.removeChild(histEl.lastChild);
+}
+
+window.speechSynthesis.getVoices();
+setTimeout(() => window.speechSynthesis.getVoices(), 500);
+</script>
+</body>
+</html>

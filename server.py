@@ -43,7 +43,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _speak(self, payload):
         if not OPENAI_KEY: self._err(401,"OPENAI_KEY eksik"); return
         payload.pop("openai_key",None)
-        tts={"model":"tts-1-hd","input":payload.get("text",""),"voice":payload.get("voice","nova"),"speed":payload.get("speed",1.0),"response_format":"mp3"}
+        tts={"model":"tts-1","input":payload.get("text",""),"voice":payload.get("voice","nova"),"speed":payload.get("speed",1.0),"response_format":"mp3"}
         req=urllib.request.Request("https://api.openai.com/v1/audio/speech",
             data=json.dumps(tts).encode(),
             headers={"Content-Type":"application/json","Authorization":f"Bearer {OPENAI_KEY}"},
